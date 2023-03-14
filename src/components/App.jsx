@@ -1,108 +1,98 @@
+import React, { useState, useEffect } from 'react';
 import { AddForm } from './AddAbonentForm/AddAbonentForm';
 import { ItemList } from './AbonentList/AbonentList';
 import { Filter } from './Filtr/Filtr';
 
-const { Component } = require('react');
-class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
-  componentDidMount() {
-    const contacts = localStorage.getItem('contacts');
-    const parsedContacts = JSON.parse(contacts);
+export default function App() {
+  const [contacts, setContacts] = useState([]);
+  const [filter, setFilter] = useState('');
+  useEffect(() => {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+    const contactsFromStorage = localStorage.getItem('contacts');
+    const parsedContacts = JSON.parse(contactsFromStorage);
     if (parsedContacts) {
-      this.setState({ contacts: parsedContacts });
+      setContacts(prevContacts => [parsedContacts, ...prevContacts]);
     }
-  }
+    return;
+  }, [contacts]);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (this.state.contacts !== prevState.contacts) {
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
-    }
-  }
+  useEffect(() => {}, []);
 
-  formSubmitHandler = data => {
-    const { contacts } = this.state;
+  const formSubmitHandler = data => {
     const existContact = contacts.find(
       contact => contact.name.toLowerCase() === data.name.toLowerCase()
     );
     if (existContact) {
       return alert(`${data.name} is already in contacts`);
     }
-    this.setState(({ contacts }) => ({
-      contacts: [data, ...contacts],
-    }));
+
+    setContacts(prevContacts => [data, ...prevContacts]);
   };
 
-  changeFilter = e => {
-    this.setState({ filter: e.currentTarget.value });
+  const changeFilter = e => {
+    setFilter(e.currentTarget.value);
   };
 
-  getVisibleContact = () => {
-    const { filter, contacts } = this.state;
+  const getVisibleContact = () => {
     const normalizedFilter = filter.toLowerCase();
-    return contacts.filter(contact =>
-      contact.name.toLowerCase().includes(normalizedFilter)
+    if (normalizedFilter) {
+      return contacts.filter(contact =>
+        contact.name.toLowerCase().includes(normalizedFilter)
+      );
+    }
+  };
+  const deleteContact = contactId => {
+    setContacts(prevContacts =>
+      prevContacts.contacts.filter(contact => contact.id !== contactId)
     );
   };
-  deleteContact = contactId => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== contactId),
-    }));
-  };
 
-  render() {
-    const { filter } = this.state;
+  const visibleItems = getVisibleContact();
+  return (
+    <div
+      style={{
+        height: '100%',
+        padding: '15px',
 
-    const visibleItems = this.getVisibleContact();
-    return (
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        fontSize: 40,
+        color: '#010101',
+      }}
+    >
       <div
         style={{
-          height: '100%',
-          padding: '15px',
-
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'flex-start',
-          fontSize: 40,
-          color: '#010101',
+          width: '300px',
+          border: '1px solid black',
+          borderRadius: '4px',
         }}
       >
-        <div
+        <h1
           style={{
-            width: '300px',
-            border: '1px solid black',
-            borderRadius: '4px',
-          }}
-        >
-          <h1
-            style={{
-              paddingLeft: '40px',
-              fontSize: '40px',
-              margin: '0px',
-            }}
-          >
-            Phonebook
-          </h1>
-          <AddForm onSubmit={this.formSubmitHandler} />
-        </div>
-
-        <h2
-          style={{
-            margin: '0',
             paddingLeft: '40px',
-            padding: '40px',
-            fontSize: 40,
+            fontSize: '40px',
+            margin: '0px',
           }}
         >
-          Contacts
-        </h2>
-        <Filter value={filter} onChange={this.changeFilter} />
-        <ItemList contacts={visibleItems} deleteItem={this.deleteContact} />
+          Phonebook
+        </h1>
+        <AddForm onSubmit={formSubmitHandler} />
       </div>
-    );
-  }
+
+      <h2
+        style={{
+          margin: '0',
+          paddingLeft: '40px',
+          padding: '40px',
+          fontSize: 40,
+        }}
+      >
+        Contacts
+      </h2>
+      <Filter value={filter} onChange={changeFilter} />
+      <ItemList contacts={visibleItems} deleteItem={deleteContact} />
+    </div>
+  );
 }
-export default App;
